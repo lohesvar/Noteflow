@@ -1,0 +1,31 @@
+<div class="section-header">
+  <div>
+    <h2>My Library</h2>
+    <p>You have {{ notes_count }} saved notes stored in NoteFlow.</p>
+  </div>
+  <div class="filter-controls">
+    <select class="filter-select" onchange="location = this.value;">
+      <option value="/library" {{ filter_all_selected }}>All Categories</option>
+      <option value="/library?category=Personal" {{ filter_Personal_selected }}>Personal</option>
+      <option value="/library?category=Work" {{ filter_Work_selected }}>Work</option>
+      <option value="/library?category=Code" {{ filter_Code_selected }}>Code</option>
+      <option value="/library?category=Ideas" {{ filter_Ideas_selected }}>Ideas</option>
+      <option value="/library?category=Journal" {{ filter_Journal_selected }}>Journal</option>
+    </select>
+  </div>
+</div>
+
+<!-- Library Empty State -->
+<div class="empty-state glass-panel" style="display: {{ empty_state_display }};">
+  <div class="empty-icon"><i data-lucide="notebook"></i></div>
+  <h3>No Notes Found</h3>
+  <p>You haven't created or saved any notes in this category yet.</p>
+  <a href="/" class="btn btn-primary" style="text-decoration:none;">
+    <i data-lucide="plus"></i> Create Note
+  </a>
+</div>
+
+<!-- Notes Grid -->
+<div class="notes-grid" style="display: {{ grid_display }};">
+  {{ notes_list }}
+</div>

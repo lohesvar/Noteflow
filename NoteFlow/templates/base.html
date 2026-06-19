@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NoteFlow - {{ title }}</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/style.css">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Local Theme Controller -->
+  <script>
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  </script>
+</head>
+<body>
+  <!-- Background Glow Effects -->
+  <div class="glow-sphere glow-sphere-1"></div>
+  <div class="glow-sphere glow-sphere-2"></div>
+
+  <!-- Main Application Wrapper -->
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">
+          <i data-lucide="sticky-note"></i>
+        </div>
+        <a href="/" class="brand-name" style="text-decoration: none;">NoteFlow</a>
+      </div>
+      
+      <nav class="nav-links">
+        <a href="/" class="nav-btn {{ active_tab_create }}">
+          <i data-lucide="edit-3"></i>
+          <span>Create Note</span>
+        </a>
+        <a href="/library" class="nav-btn {{ active_tab_library }}">
+          <i data-lucide="folder-heart"></i>
+          <span>My Library</span>
+        </a>
+        <a href="/explore" class="nav-btn {{ active_tab_explore }}">
+          <i data-lucide="compass"></i>
+          <span>Explore Public</span>
+        </a>
+        {{ auth_sidebar_links }}
+      </nav>
+
+      <div class="sidebar-footer">
+        <!-- Pure CSS/JS Theme Toggle Button -->
+        <label class="theme-btn" style="cursor: pointer;">
+          <input type="checkbox" id="theme-toggle" style="display:none;">
+          <i data-lucide="moon" class="theme-icon-dark"></i>
+          <i data-lucide="sun" class="theme-icon-light"></i>
+          <span>Toggle Theme</span>
+        </label>
+      </div>
+    </aside>
+
+    <!-- Content Area Container -->
+    <main class="main-content">
+      <!-- Top Bar (Header) -->
+      <header class="top-bar">
+        <div class="user-profile">
+          <div class="badge-premium">
+            <i data-lucide="zap"></i> Premium Active
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">{{ logged_username }}</span>
+            <img src="https://api.dicebear.com/7.x/bottts/svg?seed={{ logged_username }}" alt="Avatar" class="avatar">
+          </div>
+        </div>
+      </header>
+
+      <!-- Dynamic Page View -->
+      <div class="view-viewport">
+        {{ content }}
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Lucide Icon Initializer -->
+  <script>
+    // Theme checkbox sync
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggle = document.getElementById('theme-toggle');
+      if (toggle) {
+        toggle.checked = savedTheme === 'light';
+        toggle.addEventListener('change', () => {
+          const newTheme = toggle.checked ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+        });
+      }
+    });
+    
+    // Auto initialize Lucide
+    lucide.createIcons();
+  </script>
+</body>
+</html>

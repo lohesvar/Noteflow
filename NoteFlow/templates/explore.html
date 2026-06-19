@@ -1,0 +1,31 @@
+<div class="section-header">
+  <div>
+    <h2>Explore Public Notes</h2>
+    <p>Browse through public notes, checklists, and code snippets created by the community.</p>
+  </div>
+  <div class="filter-controls">
+    <select class="filter-select" onchange="location = this.value;">
+      <option value="/explore" {{ filter_all_selected }}>All Categories</option>
+      <option value="/explore?category=Personal" {{ filter_Personal_selected }}>Personal</option>
+      <option value="/explore?category=Work" {{ filter_Work_selected }}>Work</option>
+      <option value="/explore?category=Code" {{ filter_Code_selected }}>Code</option>
+      <option value="/explore?category=Ideas" {{ filter_Ideas_selected }}>Ideas</option>
+      <option value="/explore?category=Journal" {{ filter_Journal_selected }}>Journal</option>
+    </select>
+  </div>
+</div>
+
+<!-- Explore Empty State -->
+<div class="empty-state glass-panel" style="display: {{ empty_state_display }};">
+  <div class="empty-icon"><i data-lucide="compass"></i></div>
+  <h3>No Public Notes Found</h3>
+  <p>No notes have been shared publicly in this category yet. Be the first to share one!</p>
+  <a href="/" class="btn btn-primary" style="text-decoration:none;">
+    <i data-lucide="plus"></i> Create Note
+  </a>
+</div>
+
+<!-- Notes Grid -->
+<div class="notes-grid" style="display: {{ grid_display }};">
+  {{ notes_list }}
+</div>
