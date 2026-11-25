@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>NoteFlow — {{ status_code }} {{ title }}</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="error-page">
+  <main class="error-card surface">
+    <p class="eyebrow">NOTEFLOW</p>
+    <p class="error-code">{{ status_code }}</p>
+    <h1>{{ title }}</h1>
+    <p>{{ message }}</p>
+    <a class="btn btn-primary" href="/">Return to NoteFlow</a>
+  </main>
+</body>
+</html>

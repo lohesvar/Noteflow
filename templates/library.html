@@ -1,31 +1,80 @@
-<div class="section-header">
+{% extends "base.html" %}
+{% block content %}
+<section class="section-header">
   <div>
-    <h2>My Library</h2>
-    <p>You have {{ notes_count }} saved notes stored in NoteFlow.</p>
+    <p class="eyebrow">YOUR PERSONAL COLLECTION</p>
+    <h1>My library</h1>
+    <p>{{ notes|length }} note{% if notes|length != 1 %}s{% endif %}{% if category_filter != 'all' %} in {{ category_filter }}{% else %} saved in one place{% endif %}.</p>
   </div>
-  <div class="filter-controls">
-    <select class="filter-select" onchange="location = this.value;">
-      <option value="/library" {{ filter_all_selected }}>All Categories</option>
-      <option value="/library?category=Personal" {{ filter_Personal_selected }}>Personal</option>
-      <option value="/library?category=Work" {{ filter_Work_selected }}>Work</option>
-      <option value="/library?category=Code" {{ filter_Code_selected }}>Code</option>
-      <option value="/library?category=Ideas" {{ filter_Ideas_selected }}>Ideas</option>
-      <option value="/library?category=Journal" {{ filter_Journal_selected }}>Journal</option>
+  <form class="filter-controls" action="{{ url_for('library') }}" method="get">
+    <label class="sr-only" for="library-category">Filter by category</label>
+    <select class="filter-select" id="library-category" name="category" onchange="this.form.submit()">
+      <option value="all"{% if category_filter == 'all' %} selected{% endif %}>All categories</option>
+      {% for category in categories %}
+        <option value="{{ category }}"{% if category_filter == category %} selected{% endif %}>{{ category }}</option>
+      {% endfor %}
     </select>
+  </form>
+</section>
+
+{% if notes %}
+  <div class="notes-grid">
+    {% for note in notes %}
+      <article class="note-card surface">
+        <div class="card-header">
+          <span class="category-badge category-{{ note.category|lower }}">{{ note.category }}</span>
+          <span class="note-date">{% if note.is_public %}Public{% else %}Private{% endif %}</span>
+        </div>
+        <h2><a href="{{ url_for('view_note', hash_id=note.hash_id) }}">{{ note.title }}</a></h2>
+        <p class="note-snippet">{{ note.content[:160] }}{% if note.content|length > 160 %}…{% endif %}</p>
+        <div class="card-footer">
+          <div class="card-meta">
+            <span class="meta-item" title="Views"><i data-lucide="eye" aria-hidden="true"></i>{{ note.views }}</span>
+            {% if note.password_hash %}<span class="meta-item" title="Password protected"><i data-lucide="lock-keyhole" aria-label="Password protected"></i></span>{% endif %}
+          </div>
+          <div class="card-actions">
+            <button type="button" class="action-btn copy-link" data-note-path="{{ url_for('view_note', hash_id=note.hash_id) }}" aria-label="Copy share link" title="Copy share link">
+              <i data-lucide="link" aria-hidden="true"></i>
+            </button>
+            <form action="{{ url_for('delete_note', hash_id=note.hash_id) }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="action-btn delete-action" aria-label="Delete {{ note.title }}" title="Delete note" onclick="return confirm('Delete this note?')">
+                <i data-lucide="trash-2" aria-hidden="true"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+      </article>
+    {% endfor %}
   </div>
-</div>
+{% else %}
+  <section class="empty-state surface">
+    <span class="empty-icon"><i data-lucide="notebook-tabs" aria-hidden="true"></i></span>
+    <h2>{% if category_filter == 'all' %}Your library is ready.{% else %}Nothing in this category yet.{% endif %}</h2>
+    <p>Your saved notes will appear here. Start with a thought you want to keep.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary"><i data-lucide="square-pen" aria-hidden="true"></i>Create a note</a>
+  </section>
+{% endif %}
 
-<!-- Library Empty State -->
-<div class="empty-state glass-panel" style="display: {{ empty_state_display }};">
-  <div class="empty-icon"><i data-lucide="notebook"></i></div>
-  <h3>No Notes Found</h3>
-  <p>You haven't created or saved any notes in this category yet.</p>
-  <a href="/" class="btn btn-primary" style="text-decoration:none;">
-    <i data-lucide="plus"></i> Create Note
-  </a>
-</div>
-
-<!-- Notes Grid -->
-<div class="notes-grid" style="display: {{ grid_display }};">
-  {{ notes_list }}
-</div>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.copy-link').forEach((button) => {
+      button.addEventListener('click', async () => {
+        try {
+          const shareUrl = new URL(button.dataset.notePath, window.location.origin).href;
+          await navigator.clipboard.writeText(shareUrl);
+          button.setAttribute('aria-label', 'Share link copied');
+          button.title = 'Link copied';
+          window.setTimeout(() => {
+            button.setAttribute('aria-label', 'Copy share link');
+            button.title = 'Copy share link';
+          }, 1600);
+        } catch (error) {
+          window.prompt('Copy this share link:', new URL(button.dataset.notePath, window.location.origin).href);
+        }
+      });
+    });
+    if (window.lucide) window.lucide.createIcons();
+  });
+</script>
+{% endblock %}

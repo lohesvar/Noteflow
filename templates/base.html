@@ -2,106 +2,95 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NoteFlow - {{ title }}</title>
-  <!-- Google Fonts -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>NoteFlow{% if title %} — {{ title }}{% endif %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <!-- Stylesheets -->
-  <link rel="stylesheet" href="/style.css">
-  <!-- Lucide Icons CDN -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Local Theme Controller -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('stylesheet') }}">
+  <script src="https://unpkg.com/lucide@latest" defer></script>
   <script>
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    try {
+      document.documentElement.dataset.theme = localStorage.getItem('theme') || 'dark';
+    } catch (error) {
+      document.documentElement.dataset.theme = 'dark';
+    }
   </script>
 </head>
 <body>
-  <!-- Background Glow Effects -->
-  <div class="glow-sphere glow-sphere-1"></div>
-  <div class="glow-sphere glow-sphere-2"></div>
-
-  <!-- Main Application Wrapper -->
   <div class="app-container">
-    
-    <!-- Sidebar Navigation -->
     <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-logo">
-          <i data-lucide="sticky-note"></i>
-        </div>
-        <a href="/" class="brand-name" style="text-decoration: none;">NoteFlow</a>
-      </div>
-      
-      <nav class="nav-links">
-        <a href="/" class="nav-btn {{ active_tab_create }}">
-          <i data-lucide="edit-3"></i>
-          <span>Create Note</span>
+      <a href="{{ url_for('index') }}" class="brand" aria-label="NoteFlow home">
+        <span class="brand-logo"><i data-lucide="sticky-note" aria-hidden="true"></i></span>
+        <span class="brand-name">NoteFlow</span>
+      </a>
+
+      <div class="nav-caption">Workspace</div>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="{{ url_for('index') }}" class="nav-btn{% if active_tab == 'create' %} active{% endif %}"{% if active_tab == 'create' %} aria-current="page"{% endif %}>
+          <i data-lucide="square-pen" aria-hidden="true"></i><span>Create note</span>
         </a>
-        <a href="/library" class="nav-btn {{ active_tab_library }}">
-          <i data-lucide="folder-heart"></i>
-          <span>My Library</span>
+        <a href="{{ url_for('library') }}" class="nav-btn{% if active_tab == 'library' %} active{% endif %}"{% if active_tab == 'library' %} aria-current="page"{% endif %}>
+          <i data-lucide="notebook-tabs" aria-hidden="true"></i><span>My library</span>
         </a>
-        <a href="/explore" class="nav-btn {{ active_tab_explore }}">
-          <i data-lucide="compass"></i>
-          <span>Explore Public</span>
+        <a href="{{ url_for('explore') }}" class="nav-btn{% if active_tab == 'explore' %} active{% endif %}"{% if active_tab == 'explore' %} aria-current="page"{% endif %}>
+          <i data-lucide="compass" aria-hidden="true"></i><span>Explore</span>
         </a>
-        {{ auth_sidebar_links }}
       </nav>
 
-      <div class="sidebar-footer">
-        <!-- Pure CSS/JS Theme Toggle Button -->
-        <label class="theme-btn" style="cursor: pointer;">
-          <input type="checkbox" id="theme-toggle" style="display:none;">
-          <i data-lucide="moon" class="theme-icon-dark"></i>
-          <i data-lucide="sun" class="theme-icon-light"></i>
-          <span>Toggle Theme</span>
-        </label>
+      <div class="sidebar-bottom">
+        {% if logged_user %}
+          <div class="sidebar-account">
+            <span class="account-avatar" aria-hidden="true">{{ logged_user.username[:1]|upper }}</span>
+            <span class="account-name">{{ logged_user.username }}</span>
+            <form action="{{ url_for('logout') }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button class="icon-button" type="submit" aria-label="Sign out" title="Sign out">
+                <i data-lucide="log-out" aria-hidden="true"></i>
+              </button>
+            </form>
+          </div>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="nav-btn sign-in-link">
+            <i data-lucide="log-in" aria-hidden="true"></i><span>Sign in</span>
+          </a>
+        {% endif %}
+        <button class="theme-btn" id="theme-toggle" type="button" aria-label="Switch color theme">
+          <i data-lucide="moon" class="theme-icon-dark" aria-hidden="true"></i>
+          <i data-lucide="sun" class="theme-icon-light" aria-hidden="true"></i>
+          <span>Appearance</span>
+        </button>
+        <p class="sidebar-footnote">A quiet place for your thoughts.</p>
       </div>
     </aside>
 
-    <!-- Content Area Container -->
     <main class="main-content">
-      <!-- Top Bar (Header) -->
       <header class="top-bar">
-        <div class="user-profile">
-          <div class="badge-premium">
-            <i data-lucide="zap"></i> Premium Active
-          </div>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">{{ logged_username }}</span>
-            <img src="https://api.dicebear.com/7.x/bottts/svg?seed={{ logged_username }}" alt="Avatar" class="avatar">
-          </div>
-        </div>
+        <span class="top-bar-label">{% if logged_user %}Your workspace{% else %}Community notes{% endif %}</span>
+        {% if logged_user %}
+          <span class="top-bar-user"><span class="account-avatar" aria-hidden="true">{{ logged_user.username[:1]|upper }}</span>{{ logged_user.username }}</span>
+        {% else %}
+          <a class="top-bar-link" href="{{ url_for('login') }}">Sign in <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
+        {% endif %}
       </header>
-
-      <!-- Dynamic Page View -->
       <div class="view-viewport">
-        {{ content }}
+        {% block content %}{% endblock %}
       </div>
     </main>
-
   </div>
-
-  <!-- Lucide Icon Initializer -->
   <script>
-    // Theme checkbox sync
     document.addEventListener('DOMContentLoaded', () => {
-      const toggle = document.getElementById('theme-toggle');
-      if (toggle) {
-        toggle.checked = savedTheme === 'light';
-        toggle.addEventListener('change', () => {
-          const newTheme = toggle.checked ? 'light' : 'dark';
-          document.documentElement.setAttribute('data-theme', newTheme);
-          localStorage.setItem('theme', newTheme);
+      const themeButton = document.getElementById('theme-toggle');
+      if (themeButton) {
+        themeButton.addEventListener('click', () => {
+          const nextTheme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+          document.documentElement.dataset.theme = nextTheme;
+          try { localStorage.setItem('theme', nextTheme); } catch (error) { /* Theme remains active for this page. */ }
         });
       }
+      if (window.lucide) window.lucide.createIcons();
     });
-    
-    // Auto initialize Lucide
-    lucide.createIcons();
   </script>
 </body>
 </html>

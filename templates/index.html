@@ -1,176 +1,155 @@
-<!-- VIEW: CREATE / EDIT NOTE -->
-<div class="hero-section">
-  <h1>Create & Share a Note</h1>
-  <p>Write standard notes, documentation or code snippets, customize security and expiration, and save them dynamically.</p>
-</div>
+{% extends "base.html" %}
+{% block content %}
+<section class="page-intro">
+  <div>
+    <p class="eyebrow">WRITE SOMETHING WORTH KEEPING</p>
+    <h1>Create a note</h1>
+    <p>Capture an idea, keep it private, or share it with the community.</p>
+  </div>
+</section>
 
-<form action="/create" method="POST" class="editor-grid">
-  <!-- Left Panel: Note Inputs -->
-  <div class="editor-main-card glass-panel">
+{% if error_message %}
+  <div class="form-alert" role="alert"><i data-lucide="circle-alert" aria-hidden="true"></i>{{ error_message }}</div>
+{% endif %}
+
+{% set note_title = imported.title if imported else 'Welcome to NoteFlow' %}
+{% set note_category = imported.category if imported else 'Code' %}
+
+<form action="{{ url_for('create_note') }}" method="post" class="editor-grid">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <section class="editor-main-card surface" aria-label="Note editor">
     <div class="editor-header">
-      <input type="text" name="title" id="note-title" placeholder="Untitled Note..." required autocomplete="off" value="Welcome to NoteFlow">
-      <div class="editor-modes">
-        <label for="preview-toggle-cb" class="mode-btn mode-btn-write">Write</label>
-        <label for="preview-toggle-cb" class="mode-btn mode-btn-preview">Preview</label>
+      <label class="sr-only" for="note-title">Note title</label>
+      <input type="text" name="title" id="note-title" placeholder="Untitled note" required maxlength="200" value="{{ note_title }}">
+      <div class="editor-modes" role="group" aria-label="Editor mode">
+        <button type="button" class="mode-btn active" id="write-mode">Write</button>
+        <button type="button" class="mode-btn" id="preview-mode">Preview</button>
       </div>
     </div>
-
-    <!-- Mode Checkbox (styled in style.css to toggle visibility) -->
-    <input type="checkbox" id="preview-toggle-cb" class="state-preview-toggle" style="display:none;">
-
-    <!-- Input Area -->
     <div class="textarea-container" id="editor-write-pane">
-      <textarea name="content" id="note-body" placeholder="Write something incredible here... "># Getting Started with NoteFlow
+      <label class="sr-only" for="note-body">Note content</label>
+      <textarea name="content" id="note-body" placeholder="Start with a thought..." required maxlength="200000">{% if imported %}{{ imported.content }}{% else %}# Getting Started with NoteFlow
 
 Welcome to NoteFlow, a premium note sharing platform! Here are some quick tips to get started:
 
 - **Create Notes**: Write down your thoughts, instructions, or code snippets in this editor.
 - **Categories**: Organize your library using categories like Personal, Work, Code, Ideas, or Journal.
 - **Security**: Toggle password protection in the sidebar settings to secure sensitive notes.
-- **Share**: Publish to the Public Feed or share the generated URL link with others.</textarea>
+- **Share**: Publish to the Public Feed or share the generated URL link with others.{% endif %}</textarea>
     </div>
-
-    <!-- Preview Area -->
-    <div class="preview-container" id="editor-preview-pane">
-      <!-- Preview content populated dynamically by JavaScript below -->
+    <div class="preview-container markdown-body" id="editor-preview-pane" aria-live="polite"></div>
+    <div class="editor-stats" aria-live="polite">
+      <span class="stat-item"><i data-lucide="type" aria-hidden="true"></i><span id="stat-words">0</span> words</span>
+      <span class="stat-item"><i data-lucide="clock-3" aria-hidden="true"></i><span id="stat-read-time">1</span> min read</span>
+      <span class="stat-item"><i data-lucide="align-left" aria-hidden="true"></i><span id="stat-chars">0</span> characters</span>
     </div>
+  </section>
 
-    <!-- Editor Footer Statistics -->
-    <div class="editor-stats">
-      <div class="stat-item"><i data-lucide="file-text"></i> <span id="stat-words">0</span> words</div>
-      <div class="stat-item"><i data-lucide="clock"></i> <span id="stat-read-time">1</span> min read</div>
-      <div class="stat-item"><i data-lucide="align-left"></i> <span id="stat-chars">0</span> characters</div>
+  <aside class="editor-side-card surface">
+    <div>
+      <p class="eyebrow">NOTE SETTINGS</p>
+      <h2>Make it yours</h2>
     </div>
-  </div>
-
-  <!-- Right Panel: Configurations -->
-  <div class="editor-side-card glass-panel">
-    <h3>Settings & Sharing</h3>
-    
     <div class="form-group">
-      <label for="note-category"><i data-lucide="tag"></i> Category / Tag</label>
+      <label for="note-category">Category</label>
       <select name="category" id="note-category">
-        <option value="Personal">Personal</option>
-        <option value="Work">Work</option>
-        <option value="Code" selected>Code</option>
-        <option value="Ideas">Ideas</option>
-        <option value="Journal">Journal</option>
+        {% for category in categories %}
+          <option value="{{ category }}"{% if note_category == category %} selected{% endif %}>{{ category }}</option>
+        {% endfor %}
       </select>
     </div>
-
     <div class="form-group">
-      <label for="note-expiry"><i data-lucide="timer"></i> Expiration</label>
+      <label for="note-expiry">Expiration</label>
       <select name="expiry" id="note-expiry">
-        <option value="never" selected>Never</option>
+        <option value="never">Never</option>
         <option value="burn">Burn after reading</option>
-        <option value="1h">1 hour</option>
-        <option value="24h">24 hours</option>
+        <option value="1h">After 1 hour</option>
+        <option value="24h">After 24 hours</option>
       </select>
     </div>
-
-    <div class="form-group">
-      <label class="checkbox-label" style="cursor: pointer;">
-        <input type="checkbox" id="password-toggle-checkbox" style="margin-right: 8px;">
-        <span>Enable Password Protection</span>
+    <div class="settings-option">
+      <label class="checkbox-label" for="password-toggle-checkbox">
+        <input type="checkbox" id="password-toggle-checkbox">
+        <span><strong>Password protection</strong><small>Require a password to read</small></span>
       </label>
-      <input type="password" name="password" id="note-password-input" placeholder="Enter password..." class="form-group" style="display:none; margin-top:8px;">
+      <input type="password" name="password" id="note-password-input" placeholder="Set a note password" minlength="8" autocomplete="new-password" hidden>
     </div>
-
-    <div class="form-group">
-      <label class="checkbox-label" style="cursor: pointer;">
-        <input type="checkbox" name="is_public" value="1" checked>
-        <span>Publish to Public Feed</span>
+    <div class="settings-option">
+      <label class="checkbox-label" for="public-toggle">
+        <input type="checkbox" name="is_public" value="1" id="public-toggle" checked>
+        <span><strong>Share publicly</strong><small>Include this note in Explore</small></span>
       </label>
     </div>
-
     <div class="editor-actions">
-      <button type="submit" class="btn btn-primary btn-glow">
-        <i data-lucide="share-2"></i> Save & Share Note
-      </button>
-      <a href="/library" class="btn btn-secondary" style="text-decoration:none; text-align:center;">
-        <i data-lucide="folder"></i> View My Library
-      </a>
+      <button type="submit" class="btn btn-primary"><i data-lucide="send" aria-hidden="true"></i> Save and share</button>
+      <a href="{{ url_for('library') }}" class="btn btn-secondary"><i data-lucide="notebook-tabs" aria-hidden="true"></i> Open my library</a>
     </div>
-  </div>
+  </aside>
 </form>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const bodyInput = document.getElementById('note-body');
-    const previewPane = document.getElementById('editor-preview-pane');
-    
-    const statWords = document.getElementById('stat-words');
-    const statChars = document.getElementById('stat-chars');
-    const statReadTime = document.getElementById('stat-read-time');
+    const body = document.getElementById('note-body');
+    const preview = document.getElementById('editor-preview-pane');
+    const writePane = document.getElementById('editor-write-pane');
+    const writeButton = document.getElementById('write-mode');
+    const previewButton = document.getElementById('preview-mode');
+    const passwordToggle = document.getElementById('password-toggle-checkbox');
+    const passwordInput = document.getElementById('note-password-input');
 
-    // Real-time markdown parser & stats counter
-    function handleInput() {
-      const text = bodyInput.value;
-      
-      // Calculate Stats
-      const chars = text.length;
+    function updatePreview() {
+      const text = body.value;
       const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-      const readTime = Math.max(1, Math.ceil(words / 200));
+      document.getElementById('stat-words').textContent = words;
+      document.getElementById('stat-chars').textContent = text.length;
+      document.getElementById('stat-read-time').textContent = Math.max(1, Math.ceil(words / 200));
 
-      statWords.textContent = words;
-      statChars.textContent = chars;
-      statReadTime.textContent = readTime;
-
-      // Simple Markdown Parsing
-      let parsed = text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        // Headings
-        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-        // Bold / Italic
-        .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
-        .replace(/\*(.*)\*/gim, '<em>$1</em>')
-        // Lists (ul/li)
-        .replace(/^\- (.*$)/gim, '<li>$1</li>')
-        // Code Blocks
-        .replace(/```css\n([\s\S]*?)```/gim, '<pre><code class="css">$1</code></pre>')
-        .replace(/```([\s\S]*?)```/gim, '<pre><code>$1</code></pre>');
-
-      // Fix wrapping list items in list tags
-      if (parsed.includes('<li>')) {
-        // Group consecutive <li>s
-        parsed = parsed.replace(/(<li>.*<\/li>)/gim, '<ul>$1</ul>');
-      }
-
-      previewPane.innerHTML = parsed;
+      const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const blocks = escaped.split(/```[\w-]*\n?/);
+      preview.innerHTML = blocks.map((block, index) => {
+        if (index % 2 === 1) return '<pre><code>' + block + '</code></pre>';
+        return block.split(/\n{2,}/).map((paragraph) => {
+          if (!paragraph.trim()) return '';
+          const heading = paragraph.match(/^(#{1,2}) (.*)$/);
+          if (heading) {
+            const level = heading[1].length;
+            return '<h' + level + '>' + heading[2] + '</h' + level + '>';
+          }
+          const list = paragraph.split('\n').filter((line) => line.startsWith('- '));
+          if (list.length === paragraph.split('\n').length) {
+            return '<ul>' + list.map((line) => '<li>' + line.slice(2) + '</li>').join('') + '</ul>';
+          }
+          return '<p>' + paragraph.replace(/\n/g, '<br>') + '</p>';
+        }).join('');
+      }).join('');
+      preview.innerHTML = preview.innerHTML
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>');
     }
 
-    bodyInput.addEventListener('input', handleInput);
-    handleInput(); // run once on load
+    function setEditorMode(isPreview) {
+      writePane.hidden = isPreview;
+      preview.hidden = !isPreview;
+      writeButton.classList.toggle('active', !isPreview);
+      previewButton.classList.toggle('active', isPreview);
+      writeButton.setAttribute('aria-pressed', String(!isPreview));
+      previewButton.setAttribute('aria-pressed', String(isPreview));
+    }
 
-    // Mode Toggle Checkbox handling
-    const previewToggle = document.getElementById('preview-toggle-cb');
-    const writePane = document.getElementById('editor-write-pane');
-    const previewBtn = document.querySelector('.mode-btn-preview');
-    const writeBtn = document.querySelector('.mode-btn-write');
-
-    previewToggle.addEventListener('change', () => {
-      if (previewToggle.checked) {
-        writePane.style.display = 'none';
-        previewPane.style.display = 'block';
-        previewBtn.classList.add('active');
-        writeBtn.classList.remove('active');
-      } else {
-        writePane.style.display = 'flex';
-        previewPane.style.display = 'none';
-        previewBtn.classList.remove('active');
-        writeBtn.classList.add('active');
-      }
+    body.addEventListener('input', updatePreview);
+    writeButton.addEventListener('click', () => setEditorMode(false));
+    previewButton.addEventListener('click', () => {
+      updatePreview();
+      setEditorMode(true);
     });
-
-    // Password fields toggle
-    const pwCheckbox = document.getElementById('password-toggle-checkbox');
-    const pwInput = document.getElementById('note-password-input');
-    pwCheckbox.addEventListener('change', () => {
-      pwInput.style.display = pwCheckbox.checked ? 'block' : 'none';
-      if (!pwCheckbox.checked) pwInput.value = '';
+    passwordToggle.addEventListener('change', () => {
+      passwordInput.hidden = !passwordToggle.checked;
+      passwordInput.required = passwordToggle.checked;
+      if (!passwordToggle.checked) passwordInput.value = '';
+      if (passwordToggle.checked) passwordInput.focus();
     });
+    updatePreview();
+    if (window.lucide) window.lucide.createIcons();
   });
 </script>
+{% endblock %}

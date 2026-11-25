@@ -1,59 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
 <div class="shared-note-wrapper">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-    <a href="/library" class="btn-back-home" style="margin-bottom: 0;">
-      <i data-lucide="arrow-left"></i> Back to Library
+  <div class="note-navigation">
+    <a href="{{ url_for('library') if logged_user else url_for('explore') }}" class="btn-back-home">
+      <i data-lucide="arrow-left" aria-hidden="true"></i>Back to {{ 'library' if logged_user else 'Explore' }}
     </a>
-    <a href="/" class="btn-back-home" style="margin-bottom: 0; color: var(--accent);">
-      <i data-lucide="plus"></i> Create New Note
-    </a>
+    {% if logged_user %}
+      <a href="{{ url_for('index') }}" class="btn-back-home note-create-link"><i data-lucide="plus" aria-hidden="true"></i>Create note</a>
+    {% endif %}
   </div>
 
-  <!-- Password Wall -->
-  <div class="glass-panel password-wall-card" style="display: {{ password_wall_display }}; max-width: 500px; margin: 40px auto; padding: 40px; text-align: center;">
-    <div class="wall-icon" style="color:var(--accent); font-size: 2rem; margin-bottom: 16px;"><i data-lucide="lock" style="width:48px; height:48px; margin:0 auto;"></i></div>
-    <h2 style="margin-bottom:12px;">Protected Note</h2>
-    <p style="color:var(--text-secondary); margin-bottom:24px;">This note is encrypted and password-protected. Please enter the correct password to view the content.</p>
-    <form action="/note/{{ hash_id }}" method="POST" style="display:flex; flex-direction:column; gap:16px;">
-      <input type="password" name="password" placeholder="Enter password..." required style="background:var(--bg-input); border:1px solid var(--border-color); padding:12px; border-radius:8px; color:var(--text-primary); font-size: 1rem; width:100%; text-align:center;" autocomplete="off">
-      <button type="submit" class="btn btn-primary">Decrypt Note</button>
-    </form>
-    <div class="error-msg" style="color:var(--danger); margin-top:16px; display: {{ error_display }};">Incorrect password. Please try again.</div>
-  </div>
-
-  <!-- Main Note Container -->
-  <article class="shared-note-card glass-panel" style="display: {{ note_display }};">
-    <div class="shared-note-header">
-      <div class="meta-row">
-        <span class="category-badge category-{{ category_lower }}">{{ category }}</span>
-        <span class="meta-item"><i data-lucide="calendar"></i> {{ created_at }}</span>
-        <span class="meta-item"><i data-lucide="eye"></i> {{ views }} views</span>
-        <span class="meta-item text-danger"><i data-lucide="clock"></i> {{ expiry_text }}</span>
-      </div>
-      <h1 style="margin-bottom: 16px;">{{ title }}</h1>
-      <div class="author-row">
-        <img src="https://api.dicebear.com/7.x/bottts/svg?seed={{ hash_id }}" alt="Author" class="avatar-sm">
-        <div>
-          <div class="author-name">NoteFlow Contributor</div>
-          <div class="author-subtitle">Note ID: {{ hash_id }}</div>
+  {% if password_required %}
+    <section class="password-wall-card surface" aria-labelledby="password-title">
+      <span class="wall-icon"><i data-lucide="lock-keyhole" aria-hidden="true"></i></span>
+      <p class="eyebrow">PRIVATE BY DESIGN</p>
+      <h1 id="password-title">This note is protected.</h1>
+      <p>Enter the note password to continue. Passwords are checked securely and never shown.</p>
+      {% if password_error %}
+        <p class="password-error" role="alert">That password did not match. Please try again.</p>
+      {% endif %}
+      <form action="{{ password_action }}" method="post" class="password-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label class="sr-only" for="note-password">Note password</label>
+        <input type="password" name="password" id="note-password" placeholder="Enter note password" autocomplete="current-password" required autofocus>
+        <button type="submit" class="btn btn-primary">Open note <i data-lucide="arrow-right" aria-hidden="true"></i></button>
+      </form>
+    </section>
+  {% else %}
+    <article class="shared-note-card surface">
+      <header class="shared-note-header">
+        <div class="meta-row">
+          <span class="category-badge category-{{ note.category|lower }}">{{ note.category }}</span>
+          <span class="meta-item"><i data-lucide="calendar-days" aria-hidden="true"></i>{{ created_at }}</span>
+          <span class="meta-item"><i data-lucide="eye" aria-hidden="true"></i>{{ note.views }} views</span>
+          <span class="meta-item expiry-meta"><i data-lucide="clock-3" aria-hidden="true"></i>{{ expiry_text }}</span>
         </div>
-      </div>
-    </div>
+        <h1>{{ note.title }}</h1>
+        <div class="author-row">
+          <span class="author-mark author-mark-large" aria-hidden="true">N</span>
+          <div>
+            <div class="author-name">NoteFlow member</div>
+            <div class="author-subtitle">Shared note · {{ hash_id }}</div>
+          </div>
+        </div>
+      </header>
 
-    <!-- Shared Content Body -->
-    <div class="shared-note-content markdown-body">
-      {{ content_html }}
-    </div>
+      <div class="shared-note-content markdown-body">{{ content_html|safe }}</div>
 
-    <div class="shared-note-footer">
-      <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('raw-content-holder').value); alert('Note content copied to clipboard!');">
-        <i data-lucide="copy"></i> Copy Content
-      </button>
-      <a href="/import/{{ hash_id }}" class="btn btn-secondary" style="text-decoration:none;">
-        <i data-lucide="git-fork"></i> Import / Fork Note
-      </a>
-    </div>
-  </article>
+      <footer class="shared-note-footer">
+        <button class="btn btn-secondary" type="button" id="copy-note">
+          <i data-lucide="copy" aria-hidden="true"></i>Copy content
+        </button>
+        {% if logged_user %}
+          <a href="{{ url_for('import_note', hash_id=hash_id) }}" class="btn btn-secondary">
+            <i data-lucide="git-fork" aria-hidden="true"></i>Import a copy
+          </a>
+        {% endif %}
+      </footer>
+      <textarea id="raw-content-holder" class="sr-only" aria-hidden="true" readonly>{{ content_raw }}</textarea>
+    </article>
+  {% endif %}
 </div>
-
-<!-- Hidden textarea to store raw note content for clipboard copy -->
-<textarea id="raw-content-holder" style="display:none;">{{ content_raw }}</textarea>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const copyButton = document.getElementById('copy-note');
+    if (copyButton) {
+      copyButton.addEventListener('click', async () => {
+        const content = document.getElementById('raw-content-holder').value;
+        try {
+          await navigator.clipboard.writeText(content);
+          copyButton.innerHTML = '<i data-lucide="check" aria-hidden="true"></i>Copied';
+        } catch (error) {
+          window.prompt('Copy the note content:', content);
+        }
+        if (window.lucide) window.lucide.createIcons();
+      });
+    }
+    if (window.lucide) window.lucide.createIcons();
+  });
+</script>
+{% endblock %}

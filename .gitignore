@@ -7,3 +7,5 @@ __pycache__/
 *.pyc
 database.db
 .vercel/
+/NoteFlow/
+.vscode/settings.json

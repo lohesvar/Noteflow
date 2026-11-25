@@ -1,31 +1,66 @@
-<div class="section-header">
+{% extends "base.html" %}
+{% block content %}
+<section class="section-header">
   <div>
-    <h2>Explore Public Notes</h2>
-    <p>Browse through public notes, checklists, and code snippets created by the community.</p>
+    <p class="eyebrow">SHARED BY THE COMMUNITY</p>
+    <h1>Explore notes</h1>
+    <p>Find a useful idea, a checklist, or a fresh way to get started.</p>
   </div>
-  <div class="filter-controls">
-    <select class="filter-select" onchange="location = this.value;">
-      <option value="/explore" {{ filter_all_selected }}>All Categories</option>
-      <option value="/explore?category=Personal" {{ filter_Personal_selected }}>Personal</option>
-      <option value="/explore?category=Work" {{ filter_Work_selected }}>Work</option>
-      <option value="/explore?category=Code" {{ filter_Code_selected }}>Code</option>
-      <option value="/explore?category=Ideas" {{ filter_Ideas_selected }}>Ideas</option>
-      <option value="/explore?category=Journal" {{ filter_Journal_selected }}>Journal</option>
+  <form class="filter-controls" action="{{ url_for('explore') }}" method="get">
+    <label class="sr-only" for="explore-category">Filter by category</label>
+    <select class="filter-select" id="explore-category" name="category" onchange="this.form.submit()">
+      <option value="all"{% if category_filter == 'all' %} selected{% endif %}>All categories</option>
+      {% for category in categories %}
+        <option value="{{ category }}"{% if category_filter == category %} selected{% endif %}>{{ category }}</option>
+      {% endfor %}
     </select>
+  </form>
+</section>
+
+{% if notes %}
+  <div class="notes-grid">
+    {% for note in notes %}
+      <article class="note-card surface">
+        <div class="card-header">
+          <span class="category-badge category-{{ note.category|lower }}">{{ note.category }}</span>
+          <span class="note-date">{% if note.password_protected %}Password protected{% elif note.expiry == 'burn' %}One-time read{% else %}Community note{% endif %}</span>
+        </div>
+        <h2><a href="{{ url_for('view_note', hash_id=note.hash_id) }}">{{ note.title }}</a></h2>
+        {% if note.password_protected %}
+          <p class="note-snippet">Enter the note password to read this note.</p>
+        {% elif note.expiry == 'burn' %}
+          <p class="note-snippet">This note can be opened once before it is removed.</p>
+        {% else %}
+          <p class="note-snippet">{{ note.content[:160] }}{% if note.content|length > 160 %}…{% endif %}</p>
+        {% endif %}
+        <div class="card-footer">
+          <div class="card-meta">
+            <span class="author-mark" aria-hidden="true">{{ (note.author or 'N')[:1]|upper }}</span>
+            <span class="meta-author">{{ note.author or 'NoteFlow member' }}</span>
+            <span class="meta-item" title="Views"><i data-lucide="eye" aria-hidden="true"></i>{{ note.views }}</span>
+          </div>
+          <a href="{{ url_for('view_note', hash_id=note.hash_id) }}" class="action-btn" aria-label="Read {{ note.title }}" title="Read note">
+            <i data-lucide="arrow-up-right" aria-hidden="true"></i>
+          </a>
+        </div>
+      </article>
+    {% endfor %}
   </div>
-</div>
-
-<!-- Explore Empty State -->
-<div class="empty-state glass-panel" style="display: {{ empty_state_display }};">
-  <div class="empty-icon"><i data-lucide="compass"></i></div>
-  <h3>No Public Notes Found</h3>
-  <p>No notes have been shared publicly in this category yet. Be the first to share one!</p>
-  <a href="/" class="btn btn-primary" style="text-decoration:none;">
-    <i data-lucide="plus"></i> Create Note
-  </a>
-</div>
-
-<!-- Notes Grid -->
-<div class="notes-grid" style="display: {{ grid_display }};">
-  {{ notes_list }}
-</div>
+{% else %}
+  <section class="empty-state surface">
+    <span class="empty-icon"><i data-lucide="compass" aria-hidden="true"></i></span>
+    <h2>No notes in this corner yet.</h2>
+    <p>Public notes shared by the community will show up here.</p>
+    {% if logged_user %}
+      <a href="{{ url_for('index') }}" class="btn btn-primary"><i data-lucide="square-pen" aria-hidden="true"></i>Write the first note</a>
+    {% else %}
+      <a href="{{ url_for('login') }}" class="btn btn-primary">Join NoteFlow</a>
+    {% endif %}
+  </section>
+{% endif %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.lucide) window.lucide.createIcons();
+  });
+</script>
+{% endblock %}
