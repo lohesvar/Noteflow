@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../login-signup-animation"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "Project 2"
+	}
+}
